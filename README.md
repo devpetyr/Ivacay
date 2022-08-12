@@ -6,5 +6,5 @@ Ivacay Tourism
 .gitignore
 1.vendors
 
-Made withour migrataions.
+Made without migrations.
 db path = database/mysql/
