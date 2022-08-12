@@ -7,4 +7,5 @@ Ivacay Tourism
 1.vendors
 
 Made without migrations.
+
 db path = database/mysql/
