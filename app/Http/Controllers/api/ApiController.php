@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\api;
 
+use App\Models\AccountDeleteVerificationModel;
 use App\Models\ReviewModel;
 use http\Client\Response;
 use Illuminate\Http\Request;
@@ -208,7 +209,20 @@ class ApiController extends EmailController
     //Review
     public function reviews()
     {
-        $reviews = ReviewModel::with('getReviewUser')->whereRelation('getReviewUser', 'status', 1)->whereRelation('getReviewUser', 'profile_status', 0)->where('status', 1)->orderBy('id', 'desc')->get();
+        $reviews = ReviewModel::with('getReviewUser')
+            ->whereRelation('getReviewUser', 'status', 1)
+            ->whereRelation('getReviewUser', 'profile_status', 0)
+
+            /** Check if user delete his/her account */
+            ->whereRelation('getReviewUser', 'deleted_at', null)
+            ->whereRelation('getReviewUser', 'is_deleted_account', '!=', 1)
+            /** Check if user request for delete or user exists*/
+            ->whereRelation('getReviewUser', 'is_deleted_account', 0)
+            ->orWhereRelation('getReviewUser', 'is_deleted_account', '!=', 2)
+
+            ->where('status', 1)
+            ->orderBy('id', 'desc')
+            ->get();
         $review_star = ReviewModel::where('status', 1)->pluck('star')->avg();
         $review_avg = number_format((float)$review_star, 1, '.', '');
 
@@ -585,6 +599,8 @@ class ApiController extends EmailController
 
     /**-------------------Api Controller Guider Profile Api Ends------------------------------------------------**/
 
+    /**-------------------Api Controller Meta Mask Api Starts------------------------------------------------**/
+
     public function meta_mask($package, $user)
     {
         if (!$user) {
@@ -598,8 +614,22 @@ class ApiController extends EmailController
             ], 404);
         }
 
-        $userfind = User::where('id', $user)->where('status', 1)->first();
+        $userfind = User::where('id', $user)->where('status', 1)
+            /** Check if user delete his/her account */
+            ->where('deleted_at', null)
+            ->where('is_deleted_account', '!=', 1)
+            /** Check if user request for delete or user exists*/
+            ->where('is_deleted_account', 0)
+            ->orWhere('is_deleted_account', 2)
+            ->first();
+
         if ($userfind) {
+            if ($userfind->is_deleted_account === 2) {
+                $this->deleteAccountEmail($userfind);
+                return response()->json([
+                    'message' => 'Please check email'
+                ], 401);
+            }
             if ($userfind->user_role == 1) //means if user is a guider
             {
                 return response()->json([
@@ -607,7 +637,7 @@ class ApiController extends EmailController
                 ], 404);
 
             } else if ($userfind->user_role == 0) {
-                return redirect()->route('meta_login',['user'=>$userfind->id,'package'=>$package]);
+                return redirect()->route('meta_login', ['user' => $userfind->id, 'package' => $package]);
             }
         } else {
             return response()->json([
@@ -615,4 +645,61 @@ class ApiController extends EmailController
             ], 404);
         }
     }
+    /**-------------------Api Controller Meta Mask Api Ends------------------------------------------------**/
+
+    /**-------------------Api Controller User Delete Account Api Starts------------------------------------**/
+    public function user_account_delete($id)
+    {
+//        ->whereRelation('getPackageJourneys', 'guide_id', $request->guideId)
+
+        $user = User::where('id', $id)->where('user_role', 0)->where('status', 1)->where('profile_status', 0)->first();
+
+        if ($user) {
+            if ($user->is_deleted_account === 1 || $user->deleted_at !== null) {
+                /**  1 = Yes */
+                /**  means account already deleted */
+                return response()->json([
+                    'message' => 'account already deleted'
+                ], 404);
+            }
+            if ($user->is_deleted_account === 2) {
+                /**  2 = Process*/
+                /**  means delete my account application is in process */
+                return response()->json([
+                    'message' => 'account deletion is in process, please verify your email to delete your ivacay account'
+                ], 404);
+            }
+            if ($user->user_role === 0) {
+                if ($user->deleted_at === null) {
+                    if ($user->is_deleted_account === 0) {
+                        /**  0 = No */
+                        /**  means delete his/her account */
+                        $this->deleteAccountEmail($user);
+                        $user->is_deleted_account = 2;
+                        $user->save();
+                        $acc_del_ver = new AccountDeleteVerificationModel();
+                        $acc_del_ver->user_id = $user->id;
+                        $acc_del_ver->is_seen = 0;
+                        $acc_del_ver->token = rand('1111111111111111', '9999999999999999');
+                        $acc_del_ver->save();
+                        return response()->json([
+                            'message' => 'An email has been sent to you'
+                        ], 200);
+                    }
+                }
+            } else {
+                return response()->json([
+                    'message' => 'user role issue'
+                ], 404);
+            }
+        } else {
+            return response()->json([
+                'message' => 'user not found'
+            ], 404);
+        }
+
+    }
+    /**-------------------Api Controller User Delete Account Api Ends--------------------------------------**/
+
+
 }

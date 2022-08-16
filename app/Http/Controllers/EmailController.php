@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\DeleteAccountMail;
 use Illuminate\Http\Request;
 use App\Mail\MyTestMail;
 use App\Mail\ForgotPassword;
@@ -17,10 +18,8 @@ class EmailController extends Controller
         $user = User::find($user_id);
 
         if ($user) {
-
             \Mail::to($user->email)->send(new MyTestMail($user));
         } else {
-
             return back()->with('Order Not Found');
         }
     }
@@ -40,6 +39,14 @@ class EmailController extends Controller
     {
         if ($details) {
             \Mail::to($details->email)->send(new ForgotPassword($details));
+            return true;
+        }
+    }
+
+    public function deleteAccountEmail($details)
+    {
+        if ($details) {
+            $mail  = \Mail::to($details->email)->send(new DeleteAccountMail($details));
             return true;
         }
     }

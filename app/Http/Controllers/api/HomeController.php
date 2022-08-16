@@ -43,17 +43,11 @@ class HomeController extends EmailController
         //     'access_token' => $token,
         //     'token_type' => 'Bearer',
         // ]);
-        $user = User::where('email', $request->email)->first();
 
-        if ($user) {
-            return response()->json([
-                'message' => 'Email already exists',
-            ], 401);
-        }
         $rules = array(
             'userRole' => ['required', 'integer'],
             'userName' => ['required'],
-            'email' => ['required', 'email', 'unique:users'],
+            'email' => ['required', 'email'],
             'password' => ['required'],
             'countryId' => ['required'],
             'phone' => ['required'],
@@ -64,6 +58,23 @@ class HomeController extends EmailController
         if ($validator->fails()) {
             return response()->json($validator->errors(), 422);
         }
+
+        /** If email exists means user found*/
+        $user = User::where('email', $request->email)
+            /** Check if user delete his/her account so that means email available */
+            ->where('deleted_at', null)
+            ->where('is_deleted_account', '!=', 1)
+            /** Check if user request for delete or user exists*/
+            ->where('is_deleted_account', 0)
+            ->orWhere('is_deleted_account', 2)
+            ->first();
+
+        if ($user) {
+            return response()->json([
+                'message' => 'Email already exists',
+            ], 401);
+        }
+
         if ($request->userRole > 0) {
             return response()->json([
                 'message' => 'Invalid User Role'
@@ -131,6 +142,7 @@ class HomeController extends EmailController
         //return back()->with('success','Account created successfully!');
     }
 
+    /** Is Deleted Completed In Login*/
     public function login(Request $request)
     {
         //Mz
@@ -146,13 +158,23 @@ class HomeController extends EmailController
         }
         //Mz
 
-        $user = User::where('email', $request->email)->with('getUserProfile')->first();
+        $user = User::where('email', $request->email)->with('getUserProfile')
+            ->where('deleted_at', null)
+            ->where('is_deleted_account', '!=', 1)
+            ->first();
 
         if (!$user) {
             return response()->json([
                 'message' => 'Invalid Email'
             ], 401);
         }
+        if ($user->is_deleted_account === 2) {
+            $this->deleteAccountEmail($user);
+            return response()->json([
+                'message' => 'Please check email'
+            ], 401);
+        }
+
         if (!Auth::attempt($request->only('email', 'password'))) {
             return response()->json([
                 'message' => 'Invalid password'
@@ -183,6 +205,7 @@ class HomeController extends EmailController
         }
 
     }
+
     /**------------Api Controller Auth Forgot-Password Email Shoot Api starts----------------------------------------**/
 
     public function forgot_password(Request $request)
@@ -196,8 +219,22 @@ class HomeController extends EmailController
             return response()->json($validator->errors(), 422);
         }
 
-        $userfind = User::where('email', $request->email)->first();
+        $userfind = User::where('email', $request->email)
+            /** Check if user delete his/her account so that means email available */
+            ->where('deleted_at', null)
+            ->where('is_deleted_account', '!=', 1)
+            /** Check if user request for delete or user exists*/
+            ->where('is_deleted_account', 0)
+            ->orWhere('is_deleted_account', 2)
+            ->first();
+
         if ($userfind) {
+            if ($userfind->is_deleted_account === 2) {
+                $this->deleteAccountEmail($userfind);
+                return response()->json([
+                    'message' => 'Please check email'
+                ], 401);
+            }
             $userfind->is_reset = 1;
             $userfind->save();
             $details = $userfind;
@@ -237,10 +274,23 @@ class HomeController extends EmailController
             return response()->json($validator->errors(), 422);
         }
 
-        $userfind = User::find($request->userId);
+        $userfind = User::where('id', $request->userId)
+            /** Check if user delete his/her account so that means email available */
+            ->where('deleted_at', null)
+            ->where('is_deleted_account', '!=', 1)
+            /** Check if user request for delete or user exists*/
+            ->where('is_deleted_account', 0)
+            ->orWhere('is_deleted_account', 2)
+            ->first();
 
 
         if ($userfind) {
+            if ($userfind->is_deleted_account === 2) {
+                $this->deleteAccountEmail($userfind);
+                return response()->json([
+                    'message' => 'Please check email'
+                ], 401);
+            }
             if (Hash::check($request->new_password, $userfind->password)) {
 
                 return response()->json([
@@ -278,6 +328,7 @@ class HomeController extends EmailController
             ], 404);
         }
     }
+
     /**------------Api Controller Auth Reset-Password Api ends------------------------------------------------**/
 
 

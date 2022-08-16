@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AccountDeleteVerificationModel;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
@@ -31,12 +33,12 @@ class UIController extends EmailController
         return view('index', compact('countries', 'sceneries', 'activities'));
     }
 
-    public function meta_login($package ,$user)
+    public function meta_login($package, $user)
     {
         $userfind = User::find($user);
         Auth::login($userfind);
         if (Auth::check()) {
-            return redirect()->route('UI_pay_with_meta',[$package]);
+            return redirect()->route('UI_pay_with_meta', [$package]);
         } else {
             return 'home';
         }
@@ -343,7 +345,7 @@ class UIController extends EmailController
         ]);
 
         if (!empty($req->email) && !empty($req->password)) {
-            $userfind = User::where('email', $req->email)->where('status', 1)->first();
+            $userfind = User::where('email', $req->email)->where('status', 1)->where('deleted_at',null)->where('is_deleted_account',0)->first();
             if ($userfind) {
                 /*means found user*/
                 if (Hash::check($req->password, $userfind->password)) {
@@ -463,6 +465,49 @@ class UIController extends EmailController
     }
 
     /**-------------------- Redirect Login Starts-----------------------------*/
+
+    /**-------------------- Delete Account Starts-----------------------------*/
+    public function delete_account($userId)
+    {
+        $user = User::where('id', $userId)->where('user_role', 0)->where('status', 1)->where('profile_status', 0)->first();
+
+        if ($user) {
+            $acc_del_ver = AccountDeleteVerificationModel::where('user_id', $userId)->latest()->first();
+            if ($acc_del_ver) {
+                $acc_del_ver->is_seen = 1;
+                $acc_del_ver->save();
+
+                $carbonDate = Carbon::now();
+                $user->deleted_at = $carbonDate;
+                $user->is_deleted_account = 1;
+                $user->save();
+            } else {
+                return redirect()->route('UI_index')->with('error', 'account not found');
+            }
+        }else{
+            return redirect()->route('UI_index')->with('error', 'user not found');
+        }
+        return redirect()->route('UI_index')->with('success', 'account deleted successfully');
+
+    }
+
+    public function dont_delete_account($userId)
+    {
+        $user = User::where('id', $userId)->where('user_role', 0)->where('status', 1)->where('profile_status', 0)->first();
+
+        $acc_del_ver = AccountDeleteVerificationModel::where('user_id', $userId)->latest()->first();
+        if ($acc_del_ver) {
+            $acc_del_ver->is_seen = 1;
+            $acc_del_ver->save();
+        } else {
+            return redirect()->route('UI_index')->with('error', 'account not found');
+        }
+
+        $user->is_deleted_account = 0;
+        $user->save();
+        return redirect()->route('UI_index');
+    }
+    /**-------------------- Delete Account Ends ------------------------------*/
 //    public function redirect_login(Request $request)
 //    {
 //        $request->validate([
@@ -498,30 +543,37 @@ class UIController extends EmailController
     {
         return view('cancellation&refund-policy');
     }
+
     public function community_guidelines()
     {
         return view('community-guidelines');
     }
+
     public function cookie_policy()
     {
         return view('cookie-policy');
     }
+
     public function disclaimer()
     {
         return view('disclaimer');
     }
+
     public function dmca_notice_for_copyright_claims()
     {
         return view('dmca-notice-for-copyrights-claims');
     }
+
     public function service_provider_terms()
     {
         return view('service-provider-terms');
     }
+
     public function user_agreement()
     {
         return view('user-agreement');
     }
+
     public function support()
     {
         return view('support');

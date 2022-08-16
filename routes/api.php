@@ -119,5 +119,9 @@ Route::group(['middleware' => ['AllowCorsMiddleware']], function () {
 
 //    Route::post('/blank-view/{package?}/{user?}', [ApiController::class, 'blank_view'])->name('api_blank_view');
     /**-------------------Meta Mask View With Login Api Ends-------------------------------------------------------------**/
+
+    /**------------------- Delete Account Api Starts-----------------------------------------------------------**/
+    Route::get('/delete-account/{id?}', [ApiController::class, 'user_account_delete'])->name('api_user_account_delete');
+    /**------------------- Delete Account Api Ends-------------------------------------------------------------**/
 });
 /**-------------------AllowCors Middleware Ends--------------------------------------------------------------**/

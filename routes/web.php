@@ -288,6 +288,10 @@ Route::get('/personal_concierge_service2', [UIController::class, 'personal_conci
 /**------------------------------------------------------------- Vacationer Routes End ------------------------------------------------------------**/
 //        Route::post('/redirect-url', [UIController::class, 'redirect_login'])->name('UI_redirect_url');
 
+// Delete Account
+Route::get('/delete-account/{userId}', [UIController::class, 'delete_account'])->name('UI_delete_account');
+Route::get('/dont-delete-account/{userId}', [UIController::class, 'dont_delete_account'])->name('UI_dont_delete_account');
+
 // Forgot Password
 Route::get('/forgot-password', [UIController::class, 'forgotpasswordView'])->name('UI_forgot_Password');
 
