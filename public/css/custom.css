@@ -1685,7 +1685,6 @@ div#test a {
 .sign_btn a:hover {
     background: transparent;
 }
-
 .sing_btn2 a {
     background: #160f29;
     border: 1px solid #7e65c6;
@@ -1729,6 +1728,43 @@ div#test a {
     color: #ffffff;
     font-size: 15px;
     transition: all 0.5s ease-in-out;
+}
+
+.del_btn button {
+    background: #a5080857;
+    border: 1px solid #ff000f;
+    border-radius: 50px;
+    height: 61px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 70px 0 10px;
+    color: #FFFFFF;
+    font-size: 15px;
+    transition: all 0.5s ease-in-out;
+}
+.del_btn button:hover {
+    background: transparent;
+    border: 1px solid #ff000f;
+    color: #c3040f;
+}
+.del_btn a {
+    background: #a5080857;
+    border: 1px solid #ff000f;
+    border-radius: 50px;
+    height: 61px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 70px 0 10px;
+    color: #FFFFFF;
+    font-size: 15px;
+    transition: all 0.5s ease-in-out;
+}
+.del_btn a:hover {
+    background: transparent;
+    border: 1px solid #ff000f;
+    color: #c3040f;
 }
 
 .input_form select {
@@ -4786,7 +4822,55 @@ p.left_text2 {
     line-height: 35px;
 }
 
+/*drop down css*/
+.dropbtn {
+    background-color: transparent;
+    color: white;
+    padding: 16px;
+    font-size: 16px;
+    border: none;
+    cursor: pointer;
+}
+.dropdown button {
+    margin: 0px 0px;
+}
+div#myDropdown a {
+    color: #0a021d;
+    font-size: 15px;
+    font-weight: 600;
+    background: #fff;
+    display: flex;
+    padding: 6px 17px;
+}
+.dropbtn:hover, .dropbtn:focus {
+    background-color: transparent;
+    color: #f8c22c;
+}
+.dropdown {
+    position: relative;
+    display: inline-block;
+}
 
+.dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: #f1f1f1;
+    min-width: 160px;
+    overflow: auto;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    z-index: 1;
+}
+
+.dropdown-content a {
+    color: black;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+}
+
+.dropdown a:hover {background-color: #ddd;}
+
+.show {display: block;}
 /*media Qureis */
 
 

@@ -20,7 +20,7 @@ class EmailController extends Controller
         if ($user) {
             \Mail::to($user->email)->send(new MyTestMail($user));
         } else {
-            return back()->with('Order Not Found');
+            return back()->with('User Not Found');
         }
     }
 

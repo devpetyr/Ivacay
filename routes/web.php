@@ -235,6 +235,16 @@ Route::group(['middleware' => ['UiAuthMiddleware']], function () {
     Route::get('/pay-with/{package?}', [VacationerPackageController::class, 'pay_with_meta'])->name('UI_pay_with_meta');
     Route::post('/eth-conversion/{package?}', [VacationerPackageController::class, 'eth_conversion'])->name('eth_conversion');
 
+    //Vacationer Profile
+    Route::get('/my-profile', [UIController::class, 'vacationer_profile'])->name('UI_vacationer_profile');
+    Route::post('/my-profile-update', [UIController::class, 'vacationer_profile_update'])->name('UI_vacationer_profile_update');
+
+    // Delete Account
+    Route::get('/delete-account', [UIController::class, 'view_delete_account'])->name('UI_view_delete_account');
+    Route::post('/delete-account-email', [UIController::class, 'del_account_email'])->name('UI_vacationer_del_account_email');
+    Route::get('/delete-account/{userId}', [UIController::class, 'delete_account'])->name('UI_delete_account');
+    Route::get('/dont-delete-account/{userId}', [UIController::class, 'dont_delete_account'])->name('UI_dont_delete_account');
+
 });
 //Route::get('/pay-with/{package?}', [VacationerPackageController::class, 'pay_with_meta'])->name('UI_pay_with_meta');
 
@@ -288,9 +298,6 @@ Route::get('/personal_concierge_service2', [UIController::class, 'personal_conci
 /**------------------------------------------------------------- Vacationer Routes End ------------------------------------------------------------**/
 //        Route::post('/redirect-url', [UIController::class, 'redirect_login'])->name('UI_redirect_url');
 
-// Delete Account
-Route::get('/delete-account/{userId}', [UIController::class, 'delete_account'])->name('UI_delete_account');
-Route::get('/dont-delete-account/{userId}', [UIController::class, 'dont_delete_account'])->name('UI_dont_delete_account');
 
 // Forgot Password
 Route::get('/forgot-password', [UIController::class, 'forgotpasswordView'])->name('UI_forgot_Password');
