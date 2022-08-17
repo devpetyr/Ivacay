@@ -57,5 +57,9 @@ class User extends Authenticatable
     {
         return $this->hasOne(ProfileModel::class, 'user_id','id');
     }
-    
+    public function getUserVerification()
+    {
+        return $this->hasOne(AccountDeleteVerificationModel::class, 'user_id','id');
+    }
+
 }

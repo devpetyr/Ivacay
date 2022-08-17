@@ -127,6 +127,7 @@ class GuiderController extends Controller
                 'country_id.required' => 'The country field is required.',
             ]
         );
+        $user = User::where('id', auth()->user()->id)->first();
 
         $profile = ProfileModel::where('user_id', auth()->user()->id)->first();
         if (!$profile) {
@@ -158,15 +159,14 @@ class GuiderController extends Controller
             $data['image'] = $filename;
 
             /** Checking Image if exits in our project */
-            if(File::exists(public_path('users/' . $profile->avatar)))
+            if(File::exists(public_path('users/' . $user->avatar)))
             {
-                File::delete(public_path('users/' . $profile->avatar));
+                File::delete(public_path('users/' . $user->avatar));
             }
 //            if (Storage::disk('public')->exists('public/users/' . $profile->avatar)) {
 //                Storage::disk('public')->delete('public/users/' . $profile->avatar);
 //            }
             /** Insert the data in the database */
-            $user = User::where('id', auth()->user()->id)->first();
 
             $user->avatar = $data['image'];
 

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AccountDeleteVerificationModel;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
@@ -31,12 +33,12 @@ class UIController extends EmailController
         return view('index', compact('countries', 'sceneries', 'activities'));
     }
 
-    public function meta_login($package ,$user)
+    public function meta_login($package, $user)
     {
         $userfind = User::find($user);
         Auth::login($userfind);
         if (Auth::check()) {
-            return redirect()->route('UI_pay_with_meta',[$package]);
+            return redirect()->route('UI_pay_with_meta', [$package]);
         } else {
             return 'home';
         }
@@ -218,6 +220,116 @@ class UIController extends EmailController
         return view('vacationer', compact('countries', 'sceneries'));
     }
 
+    public function vacationer_profile()
+    {
+        if (Auth::check()) {
+            $countries = CountryModel::all();
+            $user = User::with('getUserProfile')->where('id', auth()->id())
+                ->where('deleted_at', null)
+                ->where('is_deleted_account', '!=', 1)
+                ->first();
+
+            return view('vacationer-profile', compact('user', 'countries'));
+        }
+        return back();
+    }
+
+    public function vacationer_profile_update(Request $request)
+    {
+        if (Auth::check()) {
+            if (Auth()->user()->id && Auth()->user()->id > 0) {
+                $validate_image = '';
+            } else {
+                $validate_image = 'required|image|mimes:jpeg,png,jpg|max:40000';
+            }
+        }
+
+        $request->validate([
+            'image' => $validate_image,
+            'username' => 'required',
+            'email' => 'required',
+            'full_name' => 'required',
+            'phone' => 'required',
+            'address' => 'required',
+            'zip_code' => 'required',
+            'country_id' => 'required',
+        ],
+            [
+                'zip_code.required' => 'The zip code field is required.',
+                'country_id.required' => 'The country field is required.',
+            ]
+        );
+
+        $user = User::where('id', auth()->user()->id)->first();
+        $user->username = $request->username;
+
+        /** If User Change Email need to verify */
+        if ($user->email !== $request->email) {
+            $user->email = $request->email;
+            /** to shoot an email */
+            $this->verifyEmail($user->id);
+            $user->status = 0;
+            $msg = ' Profile updated successfully, Please verify your email. Otherwise you won\'t be logged in again !';
+
+        } else {
+            $msg = ' Profile updated successfully!';
+        }
+
+        if ($request->image) {
+            $image = $request->image;
+
+            /** Make a new filename with extension */
+            $filename = time() . rand(1, 30) . '.' . $image->getClientOriginalExtension();
+
+            /**
+             * Get real image path using
+             * @class Intervention\Image\Facades\Image
+             *
+             */
+            $img = Image::make($image->getRealPath());
+
+            /** Set image dimension to conserve aspect ratio */
+            $img->fit(300, 300);
+
+            /** Get image stream to store the image else the tmp file will be stored */
+            $img->stream();
+
+            /** Make a new filename with extension */
+            $path = File::put(public_path('users/') . $filename, $img);
+
+            /** Update the image index in the data array to update the image path to be stored in database */
+            $data['image'] = $filename;
+
+            /** Checking Image if exits in our project */
+            if (File::exists(public_path('users/' . $user->avatar))) {
+                File::delete(public_path('users/' . $user->avatar));
+            }
+
+            /** Insert the data in the database */
+            $user->avatar = $data['image'];
+        }
+
+        $user->save();
+
+
+        $profile = ProfileModel::where('user_id', auth()->user()->id)->first();
+
+        if (!$profile) {
+            $profile = new ProfileModel();
+        }
+        $countryName = CountryModel::where('id', $request->country_id)->pluck('name')->first();
+        $profile->user_id = auth()->user()->id;
+        $profile->full_name = $request->full_name;
+        $profile->phone = $request->phone;
+        $profile->address = $request->address;
+        $profile->zip_code = $request->zip_code;
+        $profile->country_id = $request->country_id;
+        $profile->country = $countryName;
+        $profile->save();
+
+        return back()->with('success', $msg);
+    }
+
     public function plan_journey()
     {
         return view('contact_us');
@@ -343,7 +455,7 @@ class UIController extends EmailController
         ]);
 
         if (!empty($req->email) && !empty($req->password)) {
-            $userfind = User::where('email', $req->email)->where('status', 1)->first();
+            $userfind = User::where('email', $req->email)->where('status', 1)->where('deleted_at', null)->where('is_deleted_account', 0)->first();
             if ($userfind) {
                 /*means found user*/
                 if (Hash::check($req->password, $userfind->password)) {
@@ -463,6 +575,108 @@ class UIController extends EmailController
     }
 
     /**-------------------- Redirect Login Starts-----------------------------*/
+
+    /**-------------------- Delete Account Starts-----------------------------*/
+    public function view_delete_account()
+    {
+        return view('delete_account');
+    }
+
+    public function del_account_email(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email'
+        ]);
+
+        $user = User::where('id', auth()->user()->id)->where('user_role', 0)->where('status', 1)->where('profile_status', 0)->first();
+
+        if ($user) {
+            if ($user->email === $request->email) {
+
+                if ($user->is_deleted_account === 1 || $user->deleted_at !== null) {
+                    /**  1 = Yes */
+                    /**  means account already deleted */
+                    return back()->with('error', 'account already deleted');
+                }
+                if ($user->is_deleted_account === 2) {
+                    /**  2 = Process*/
+                    /**  means delete my account application is in process */
+                    return back()->with('error', 'account deletion is in process, please verify your email to delete your ivacay account');
+                }
+                if ($user->deleted_at === null) {
+                    if ($user->is_deleted_account === 0) {
+                        /**  0 = No */
+                        /**  means delete his/her account */
+                        $this->deleteAccountEmail($user);
+                        $user->is_deleted_account = 2;
+                        $user->save();
+                        $acc_del_ver = new AccountDeleteVerificationModel();
+                        $acc_del_ver->user_id = $user->id;
+                        $acc_del_ver->is_seen = 0;
+                        $acc_del_ver->token = rand('1111111111111111', '9999999999999999');
+                        $acc_del_ver->save();
+                        return back()->with('success', 'An email has been sent to you');
+                    }
+                }
+            } else {
+                return back()->with('error', 'Wrong email');
+            }
+        } else {
+            return back();
+        }
+
+    }
+
+    public function delete_account($userId)
+    {
+        $user = User::where('id', $userId)->where('user_role', 0)->where('status', 1)->where('profile_status', 0)->first();
+
+        if ($user) {
+            $acc_del_ver = AccountDeleteVerificationModel::where('user_id', $userId)->latest()->first();
+            if ($acc_del_ver) {
+                if ($acc_del_ver->is_seen !== 1) {
+                    $acc_del_ver->is_seen = 1;
+                    $acc_del_ver->save();
+
+                    $carbonDate = Carbon::now();
+                    $user->deleted_at = $carbonDate;
+                    $user->is_deleted_account = 1;
+                    $user->save();
+                } else {
+                    return redirect()->route('UI_index')->with('error', 'This link is no longer in use');
+                }
+            } else {
+                return redirect()->route('UI_index')->with('error', 'Account not found');
+            }
+        } else {
+            return redirect()->route('UI_index')->with('error', 'User not found');
+        }
+        Auth::logout();
+        return redirect()->route('UI_index')->with('success', 'Account deleted successfully');
+
+    }
+
+    public function dont_delete_account($userId)
+    {
+        $user = User::where('id', $userId)->where('user_role', 0)->where('status', 1)->where('profile_status', 0)->first();
+
+        $acc_del_ver = AccountDeleteVerificationModel::where('user_id', $userId)->latest()->first();
+        if ($acc_del_ver) {
+            if ($acc_del_ver->is_seen !== 1) {
+                $acc_del_ver->is_seen = 1;
+                $acc_del_ver->save();
+            } else {
+                return redirect()->route('UI_index')->with('error', 'This link is no longer in use');
+            }
+        } else {
+            return redirect()->route('UI_index')->with('error', 'Account not found');
+        }
+
+        $user->is_deleted_account = 0;
+        $user->save();
+        return redirect()->route('UI_index');
+    }
+    /**-------------------- Delete Account Ends ------------------------------*/
 //    public function redirect_login(Request $request)
 //    {
 //        $request->validate([
@@ -498,30 +712,37 @@ class UIController extends EmailController
     {
         return view('cancellation&refund-policy');
     }
+
     public function community_guidelines()
     {
         return view('community-guidelines');
     }
+
     public function cookie_policy()
     {
         return view('cookie-policy');
     }
+
     public function disclaimer()
     {
         return view('disclaimer');
     }
+
     public function dmca_notice_for_copyright_claims()
     {
         return view('dmca-notice-for-copyrights-claims');
     }
+
     public function service_provider_terms()
     {
         return view('service-provider-terms');
     }
+
     public function user_agreement()
     {
         return view('user-agreement');
     }
+
     public function support()
     {
         return view('support');
