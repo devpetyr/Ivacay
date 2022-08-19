@@ -242,10 +242,16 @@ Route::group(['middleware' => ['UiAuthMiddleware']], function () {
     // Delete Account
     Route::get('/delete-account', [UIController::class, 'view_delete_account'])->name('UI_view_delete_account');
     Route::post('/delete-account-email', [UIController::class, 'del_account_email'])->name('UI_vacationer_del_account_email');
-    Route::get('/delete-account/{userId}', [UIController::class, 'delete_account'])->name('UI_delete_account');
     Route::get('/dont-delete-account/{userId}', [UIController::class, 'dont_delete_account'])->name('UI_dont_delete_account');
 
+    // Review
+    Route::post('/send-review', [UIController::class, 'submit_review'])->name('submit_review');
+
 });
+
+Route::get('/delete-account/{userId}', [UIController::class, 'delete_account'])->name('UI_delete_account');
+
+
 //Route::get('/pay-with/{package?}', [VacationerPackageController::class, 'pay_with_meta'])->name('UI_pay_with_meta');
 
 Route::post('/search-packages', [VacationerPackageController::class, 'search_packages'])->name('Vacationer_search_packages');
@@ -277,7 +283,6 @@ Route::get('/for-guide', [UIController::class, 'for_guide'])->name('UI_for_guide
 Route::get('/articles', [UIController::class, 'articles'])->name('UI_articles');
 Route::get('/about-us', [UIController::class, 'about_us'])->name('UI_about_us');
 //    Route::get('/reviews', [UIController::class, 'reviews'])->name('UI_reviews');
-Route::post('/send-review', [UIController::class, 'submit_review'])->name('submit_review');
 Route::get('/faq', [UIController::class, 'faq'])->name('UI_faq');
 Route::get('/share-experience', [UIController::class, 'share_experience'])->name('UI_share_experience');
 

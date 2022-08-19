@@ -88,15 +88,26 @@ class UIController extends EmailController
 
     public function share_experience()
     {
-        $reviews = ReviewModel::where('status', 1)->with('getReviewUser')->orderBy('id', 'desc')->get();
+        $reviews = ReviewModel::where('status', 1)
+            ->with('getReviewUser')
+            /** Check if user delete his/her account so that means email available */
+            ->whereRelation('getReviewUser','deleted_at', null)
+            ->whereRelation('getReviewUser','is_deleted_account', '!=', 1)
+            ->orderBy('id', 'desc')
+            ->get();
         $review_star = ReviewModel::where('status', 1)->pluck('star')->avg();
         $review_avg = number_format((float)$review_star, 1, '.', '');
 
-        $excellent = ReviewModel::where('star', 5)->where('status', 1)->pluck('star')->count();
-        $good = ReviewModel::where('star', 4)->where('status', 1)->pluck('star')->count();
-        $average = ReviewModel::where('star', 3)->where('status', 1)->pluck('star')->count();
-        $poor = ReviewModel::where('star', 2)->where('status', 1)->pluck('star')->count();
-        $terrible = ReviewModel::where('star', 1)->where('status', 1)->pluck('star')->count();
+        $excellent = ReviewModel::where('star', 5)->where('status', 1)->with('getReviewUser')->whereRelation('getReviewUser','deleted_at', null)
+            ->whereRelation('getReviewUser','is_deleted_account', '!=', 1)->count();
+        $good = ReviewModel::where('star', 4)->where('status', 1)->with('getReviewUser')->whereRelation('getReviewUser','deleted_at', null)
+            ->whereRelation('getReviewUser','is_deleted_account', '!=', 1)->count();
+        $average = ReviewModel::where('star', 3)->where('status', 1)->with('getReviewUser')->whereRelation('getReviewUser','deleted_at', null)
+            ->whereRelation('getReviewUser','is_deleted_account', '!=', 1)->count();
+        $poor = ReviewModel::where('star', 2)->where('status', 1)->with('getReviewUser')->whereRelation('getReviewUser','deleted_at', null)
+            ->whereRelation('getReviewUser','is_deleted_account', '!=', 1)->count();
+        $terrible = ReviewModel::where('star', 1)->where('status', 1)->with('getReviewUser')->whereRelation('getReviewUser','deleted_at', null)
+            ->whereRelation('getReviewUser','is_deleted_account', '!=', 1)->count();
 
         //Excellent
         if ($excellent <= 0) {
@@ -362,7 +373,7 @@ class UIController extends EmailController
     {
         $this->validate($req, [
             'username' => ['required'],
-            'email' => ['required', 'email', 'unique:users'],
+            'email' => ['required', 'email'],
             'password' => ['required', 'min:8'],
             'phone' => ['required'],
             'user_role' => ['required'],
@@ -377,6 +388,19 @@ class UIController extends EmailController
                 'country_id.required' => 'The country field is required.',
             ]
         );
+
+        /** If email exists means user found*/
+        $user = User::where('email', $req->email)
+            /** Check if user delete his/her account so that means email available */
+            ->where('deleted_at', null)
+            ->where('is_deleted_account', '!=', 1)
+            /** Check if user request for delete or user exists*/
+            ->where('is_deleted_account', 0)
+            ->orWhere('is_deleted_account', 2)
+            ->first();
+        if ($user) {
+            return back()->with('error', 'User already register.');
+        }
 
         $user = new User();
         $user->username = $req->username;
@@ -453,9 +477,16 @@ class UIController extends EmailController
             'email' => ['required'],
             'password' => ['required'],
         ]);
-
         if (!empty($req->email) && !empty($req->password)) {
-            $userfind = User::where('email', $req->email)->where('status', 1)->where('deleted_at', null)->where('is_deleted_account', 0)->first();
+
+            $userfind = User::where('email', $req->email)->where('status', 1)
+                /** Check if user delete his/her account so that means email available */
+                ->where('deleted_at', null)
+                ->where('is_deleted_account', '!=', 1)
+//                /** Check if user request for delete or user exists*/
+//                ->where('is_deleted_account', 0)
+//                ->orWhere('is_deleted_account', 2)
+                ->first();
             if ($userfind) {
                 /*means found user*/
                 if (Hash::check($req->password, $userfind->password)) {
@@ -472,6 +503,11 @@ class UIController extends EmailController
                                 return back()->with('error', 'Your profile is locked. Contact owner to unlock it');
                             }
                         } else if ($userfind->user_role == 0) {
+
+                            if ($userfind->is_deleted_account === 2) {
+                                return redirect()->route('UI_view_delete_account')->with('error','Your account is in deleting process, please verify your email to delete your ivacay account');
+                            }
+
                             return back()->with('success', 'Logged in successfully');
                             // return redirect()->route('UI_index');
                         }
@@ -671,7 +707,6 @@ class UIController extends EmailController
         } else {
             return redirect()->route('UI_index')->with('error', 'Account not found');
         }
-
         $user->is_deleted_account = 0;
         $user->save();
         return redirect()->route('UI_index');

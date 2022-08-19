@@ -54,12 +54,10 @@
                         <li><a href="{{route('UI_vacationer')}}">Plan your Vacation</a></li>
                         @if(Auth::check() && Auth()->user()->user_role === 0)
                             <li>
-
-
-                                <div class="navbar-profile">
+                                <div class="main-drop">
                                     <div class="dropdown">
-                                        <button onclick="dropdownFunction()" class="dropbtn">User</button>
-                                        <div id="myDropdown" class="dropdown-content">
+                                        <button class="dropbtn">User</button>
+                                        <div class="dropdown-content">
                                             <a href="{{route('UI_vacationer_profile')}}">My Profile</a>
                                             <a href="{{route('UI_logout')}}">Log Out</a>
                                         </div>

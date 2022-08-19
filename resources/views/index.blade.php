@@ -500,9 +500,10 @@
             <div class="row">
                 <div class="col-xs-12 col-sm-6 col-md-6">
                     <div class="eight" id="myAudio">
-                        <video width="100%" preload="auto" loop="loop" id="videoBanner" class="videoBanner">
-                            <source src="images/lorem.mp4" type="video/mp4">
-                            <source src="images/lorem.mp4" type="video/ogg">
+                        <video width="100%" preload="auto" loop="loop" id="videoBanner" class="videoBanner"
+                               controls poster=
+                               "images/Host_Thumbnail_01.jpg">
+                            <source src="images/ivacay_host.mp4" type="video/mp4">
                         </video>
                         <h3>Host</h3>
                     </div>

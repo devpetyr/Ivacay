@@ -18,7 +18,6 @@ class Controller extends BaseController
         /* stripe */
         Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
         $customer = \Stripe\Customer::create(array(
-        
             'email' => 'test@gmail.com',
             'source'  => $token
         ));
