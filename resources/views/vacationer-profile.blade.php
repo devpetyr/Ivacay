@@ -16,14 +16,14 @@
     <!-- banner end -->
 
     <!-- Log In Start -->
-    <section class="log_in">
+    <section class="log_in sec-log">
         <div class="container">
             <div class="row">
                 <form action="{{route('UI_vacationer_profile_update')}}" method="POST" enctype="multipart/form-data">
                     @csrf
-                    <div class="col-xs-12 col-sm-4 col-md-4 centerCol">
-                        <div class="row">
-                            <div class="log_input ">
+                    <div class="row">
+                        <div class="col-xs-6 col-sm-6 col-md-6">
+                            <div class="log_input sec-log">
                                 <div class="form-group">
                                     <input type="text" name="username" class="form-control" placeholder="User Name*"
                                            value="{{$user->username}}" required>
@@ -95,7 +95,8 @@
                                 <div class="col-md-12 col-md-12">
                                     <div class="first_check image_upload">
                                         <div class="form-group">
-                                            <input type="file" name="image" class="" {{$user->avatar  ? "" : "required"}}>
+                                            <input type="file" name="image"
+                                                   class="" {{$user->avatar  ? "" : "required"}}>
                                             @error('image')
                                             <div class="alert alert-danger">
                                                 {{ $message }}
@@ -104,10 +105,14 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="col-md-12 col-md-12">
-                                    <img src="{{asset('users/'.$user->avatar)}}">
-                                </div>
+                            </div>
 
+                        </div>
+                        <div class="col-xs-6 col-sm-6 col-md-6">
+                            <div class="col-md-12 col-md-12">
+                              <div class="cent-img">
+                                  <img src="{{asset('users/'.$user->avatar)}}">
+                              </div>
                             </div>
                             <div class="sign_btn">
                                 <button type="submit">Update Profile</button>
